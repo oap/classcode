@@ -2,66 +2,101 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Student Sign-in Code Generator & Validator</title>
+  <title>Class Sign-In Code Generator & Validator</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
     }
+    h1, h2 {
+      color: #333;
+    }
+    .input-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: inline-block;
+      width: 220px;
+      font-weight: bold;
+    }
     input, button {
-      padding: 5px;
-      margin: 5px;
+      padding: 8px;
+      margin: 5px 0;
+      width: 100%;
+      max-width: 300px;
+      font-size: 1em;
+    }
+    button {
+      cursor: pointer;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      font-weight: bold;
+    }
+    button:hover {
+      background-color: #0056b3;
     }
     .result {
       margin-top: 15px;
       font-weight: bold;
+      font-size: 1.1em;
+      cursor: pointer;
+      background-color: #f0f0f0;
+      padding: 10px;
+      width: max-content;
+      max-width: 300px;
+      text-align: center;
+      user-select: none;
     }
-    .input-group {
-      margin-bottom: 10px;
+    .error, .success {
+      margin-top: 10px;
+      font-size: 0.9em;
     }
-    label {
-      display: inline-block;
-      width: 250px;
+    .error {
+      color: red;
     }
-    h1, h2 {
-      color: #333;
+    .success {
+      color: green;
     }
   </style>
 </head>
 <body>
-  <h1>Student Sign-in Code Generator & Validator</h1>
-  <p>Use this tool to generate and validate a unique sign-in code based on your class number and school email. Please have your class number ready and enter your school email as instructed by your teacher.</p>
+  <h1>Class Sign-In Code Generator & Validator</h1>
 
   <div>
-    <h2>Generate Your Code</h2>
+    <h2>Generate a Sign-In Code</h2>
     <div class="input-group">
-      <label for="generate-six-digit">Class Number (Provided by Instructor):</label>
-      <input type="text" id="generate-six-digit" maxlength="6" placeholder="e.g., 123456">
+      <label for="generate-class-number">Class Number (Provided by Instructor):</label>
+      <input type="text" id="generate-class-number" placeholder="Enter 6-digit class number" maxlength="6">
+      <div class="error" id="class-number-error"></div>
     </div>
     <div class="input-group">
-      <label for="generate-three-char">First Three Letters of Your School Email:</label>
-      <input type="text" id="generate-three-char" maxlength="3" placeholder="e.g., abc">
+      <label for="generate-email">Your School Email:</label>
+      <input type="email" id="generate-email" placeholder="Enter your full school email">
+      <div class="error" id="email-error"></div>
     </div>
     <button onclick="generateCode()">Generate Code</button>
-    <div class="result" id="generated-code-result"></div>
+    <div class="result success" id="generated-code-result" onclick="copyToClipboard()">Click to copy the generated code</div>
   </div>
 
   <hr>
 
   <div>
-    <h2>Validate a Code</h2>
-    <p>If you already have a generated code, you can verify its validity here:</p>
+    <h2>Validate Sign-In Code</h2>
     <div class="input-group">
-      <label for="validate-six-digit">Class Number:</label>
-      <input type="text" id="validate-six-digit" maxlength="6" placeholder="e.g., 123456">
+      <label for="validate-class-number">Class Number:</label>
+      <input type="text" id="validate-class-number" placeholder="Enter 6-digit class number" maxlength="6">
+      <div class="error" id="validate-class-number-error"></div>
     </div>
     <div class="input-group">
-      <label for="validate-three-char">First Three Letters of Your School Email:</label>
-      <input type="text" id="validate-three-char" maxlength="3" placeholder="e.g., abc">
+      <label for="validate-email">Your School Email:</label>
+      <input type="email" id="validate-email" placeholder="Enter your full school email">
+      <div class="error" id="validate-email-error"></div>
     </div>
     <div class="input-group">
-      <label for="code-to-validate">Generated Code to Validate:</label>
-      <input type="text" id="code-to-validate" maxlength="6" placeholder="Enter code here">
+      <label for="code-to-validate">Code to Validate:</label>
+      <input type="text" id="code-to-validate" placeholder="Enter the code" maxlength="6">
+      <div class="error" id="code-to-validate-error"></div>
     </div>
     <button onclick="validateCode()">Validate Code</button>
     <div class="result" id="validation-result"></div>
@@ -70,67 +105,120 @@
   <script>
     const WORKER_BASE_URL = 'https://classcode-worker.ncai.ca';
 
+    function validateFields(id, value, length) {
+      const errorField = document.getElementById(`${id}-error`);
+      if (value.length !== length) {
+        errorField.textContent = `Please enter exactly ${length} characters.`;
+        return false;
+      }
+      errorField.textContent = '';
+      return true;
+    }
+
+    function validateEmail(id, email) {
+      const errorField = document.getElementById(`${id}-error`);
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        errorField.textContent = 'Please enter a valid email address.';
+        return false;
+      }
+      errorField.textContent = '';
+      return true;
+    }
+
     async function generateCode() {
-        const sixDigitStr = document.getElementById('generate-six-digit').value;
-        const threeCharStr = document.getElementById('generate-three-char').value;
+      const classNumber = document.getElementById('generate-class-number').value;
+      const email = document.getElementById('generate-email').value;
+      const resultDiv = document.getElementById('generated-code-result');
 
-        if (sixDigitStr.length !== 6 || threeCharStr.length !== 3) {
-            document.getElementById('generated-code-result').innerText = "Please enter a valid 6-digit class number and the first 3 letters of your school email.";
-            return;
+      // Validate class number and email
+      const isClassNumberValid = validateFields('class-number', classNumber, 6);
+      const isEmailValid = validateEmail('email', email);
+
+      if (!isClassNumberValid || !isEmailValid) {
+        resultDiv.textContent = '';
+        return;
+      }
+
+      try {
+        const response = await fetch(`${WORKER_BASE_URL}/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sixDigitStr: classNumber, threeCharStr: email.slice(0, 3) })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error: ${response.statusText}`);
         }
 
-        try {
-            const response = await fetch(`${WORKER_BASE_URL}/generate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sixDigitStr, threeCharStr })
-            });
+        const data = await response.json();
+        resultDiv.textContent = `Generated Code: ${data.code}`;
+        resultDiv.className = 'result success';
+      } catch (error) {
+        console.error('Error generating code:', error);
+        resultDiv.textContent = 'There was an error generating the code. Please try again.';
+        resultDiv.className = 'result error';
+      }
+    }
 
-            if (!response.ok) {
-                throw new Error(`Error: ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            document.getElementById('generated-code-result').innerText = `Your generated code is: ${data.code}`;
-        } catch (error) {
-            console.error('Error generating code:', error);
-            document.getElementById('generated-code-result').innerText = 'There was an error generating the code. Please try again.';
-        }
+    function copyToClipboard() {
+      const codeText = document.getElementById('generated-code-result').textContent.split(': ')[1];
+      if (codeText) {
+        navigator.clipboard.writeText(codeText)
+          .then(() => {
+            const copyMessage = document.getElementById('generated-code-result');
+            copyMessage.textContent = 'Code copied to clipboard!';
+            copyMessage.className = 'result success';
+            setTimeout(() => copyMessage.textContent = `Generated Code: ${codeText}`, 2000);
+          })
+          .catch(err => console.error('Failed to copy code:', err));
+      }
     }
 
     async function validateCode() {
-        const sixDigitStr = document.getElementById('validate-six-digit').value;
-        const threeCharStr = document.getElementById('validate-three-char').value;
-        const codeToValidate = document.getElementById('code-to-validate').value;
+      const classNumber = document.getElementById('validate-class-number').value;
+      const email = document.getElementById('validate-email').value;
+      const codeToValidate = document.getElementById('code-to-validate').value;
+      const resultDiv = document.getElementById('validation-result');
 
-        if (sixDigitStr.length !== 6 || threeCharStr.length !== 3 || codeToValidate.length !== 6) {
-            document.getElementById('validation-result').innerText = "Please ensure all input fields are correctly filled with the required lengths.";
-            return;
+      // Validate inputs
+      const isClassNumberValid = validateFields('validate-class-number', classNumber, 6);
+      const isEmailValid = validateEmail('validate-email', email);
+      const isCodeValid = validateFields('code-to-validate', codeToValidate, 6);
+
+      if (!isClassNumberValid || !isEmailValid || !isCodeValid) {
+        resultDiv.textContent = '';
+        return;
+      }
+
+      try {
+        const response = await fetch(`${WORKER_BASE_URL}/validate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sixDigitStr: classNumber,
+            threeCharStr: email.slice(0, 3),
+            codeToValidate: codeToValidate
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error: ${response.statusText}`);
         }
 
-        try {
-            const response = await fetch(`${WORKER_BASE_URL}/validate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sixDigitStr, threeCharStr, codeToValidate })
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error: ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            if (data.isValid) {
-                document.getElementById('validation-result').innerText = `Code is valid. Generated at: ${new Date(data.generatedTime)}`;
-                document.getElementById('validation-result').style.color = 'green';
-            } else {
-                document.getElementById('validation-result').innerText = `Code is invalid.`;
-                document.getElementById('validation-result').style.color = 'red';
-            }
-        } catch (error) {
-            console.error('Error validating code:', error);
-            document.getElementById('validation-result').innerText = 'There was an error validating the code. Please try again.';
+        const data = await response.json();
+        if (data.isValid) {
+          resultDiv.textContent = `Code is valid, generated at: ${new Date(data.generatedTime)}`;
+          resultDiv.className = 'result success';
+        } else {
+          resultDiv.textContent = `Code is invalid.`;
+          resultDiv.className = 'result error';
         }
+      } catch (error) {
+        console.error('Error validating code:', error);
+        resultDiv.textContent = 'There was an error validating the code. Please try again.';
+        resultDiv.className = 'result error';
+      }
     }
   </script>
 
