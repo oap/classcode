@@ -212,8 +212,9 @@
         }
 
         const data = await response.json();
+        resultDiv.style.display = 'block'; // Ensure result div is visible
         if (data.isValid) {
-          resultDiv.textContent = `Code is valid, generated at: ${new Date(data.generatedTime)}`;
+          resultDiv.textContent = `Code validation successful! Generated at: ${new Date(data.generatedTime).toLocaleString()}`;
           resultDiv.className = 'result success';
         } else {
           resultDiv.textContent = `Code is invalid.`;
