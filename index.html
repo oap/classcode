@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Code Generator and Validator Demo</title>
+  <title>Student Sign-in Code Generator & Validator</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -14,45 +14,54 @@
     }
     .result {
       margin-top: 15px;
+      font-weight: bold;
     }
     .input-group {
       margin-bottom: 10px;
     }
     label {
       display: inline-block;
-      width: 200px;
+      width: 250px;
+    }
+    h1, h2 {
+      color: #333;
     }
   </style>
 </head>
 <body>
-  <h1>Code Generator and Validator Demo</h1>
+  <h1>Student Sign-in Code Generator & Validator</h1>
+  <p>Use this tool to generate and validate a unique sign-in code based on your class number and school email. Please have your class number ready and enter your school email as instructed by your teacher.</p>
+
   <div>
-    <h2>Generate Code</h2>
+    <h2>Generate Your Code</h2>
     <div class="input-group">
-      <label for="generate-six-digit">Six-Digit String:</label>
-      <input type="text" id="generate-six-digit" maxlength="6">
+      <label for="generate-six-digit">Class Number (Provided by Instructor):</label>
+      <input type="text" id="generate-six-digit" maxlength="6" placeholder="e.g., 123456">
     </div>
     <div class="input-group">
-      <label for="generate-three-char">Three-Character String:</label>
-      <input type="text" id="generate-three-char" maxlength="3">
+      <label for="generate-three-char">First Three Letters of Your School Email:</label>
+      <input type="text" id="generate-three-char" maxlength="3" placeholder="e.g., abc">
     </div>
     <button onclick="generateCode()">Generate Code</button>
     <div class="result" id="generated-code-result"></div>
   </div>
+
   <hr>
+
   <div>
-    <h2>Validate Code</h2>
+    <h2>Validate a Code</h2>
+    <p>If you already have a generated code, you can verify its validity here:</p>
     <div class="input-group">
-      <label for="validate-six-digit">Six-Digit String:</label>
-      <input type="text" id="validate-six-digit" maxlength="6">
+      <label for="validate-six-digit">Class Number:</label>
+      <input type="text" id="validate-six-digit" maxlength="6" placeholder="e.g., 123456">
     </div>
     <div class="input-group">
-      <label for="validate-three-char">Three-Character String:</label>
-      <input type="text" id="validate-three-char" maxlength="3">
+      <label for="validate-three-char">First Three Letters of Your School Email:</label>
+      <input type="text" id="validate-three-char" maxlength="3" placeholder="e.g., abc">
     </div>
     <div class="input-group">
-      <label for="code-to-validate">Code to Validate:</label>
-      <input type="text" id="code-to-validate" maxlength="6">
+      <label for="code-to-validate">Generated Code to Validate:</label>
+      <input type="text" id="code-to-validate" maxlength="6" placeholder="Enter code here">
     </div>
     <button onclick="validateCode()">Validate Code</button>
     <div class="result" id="validation-result"></div>
@@ -66,7 +75,7 @@
         const threeCharStr = document.getElementById('generate-three-char').value;
 
         if (sixDigitStr.length !== 6 || threeCharStr.length !== 3) {
-            console.log("Please ensure the six-digit string is 6 digits and the three-character string is 3 characters long.");
+            document.getElementById('generated-code-result').innerText = "Please enter a valid 6-digit class number and the first 3 letters of your school email.";
             return;
         }
 
@@ -82,10 +91,10 @@
             }
 
             const data = await response.json();
-            document.getElementById('generated-code-result').innerText = `Generated Code: ${data.code}`;
+            document.getElementById('generated-code-result').innerText = `Your generated code is: ${data.code}`;
         } catch (error) {
             console.error('Error generating code:', error);
-            console.log('There was an error generating the code. Please try again.');
+            document.getElementById('generated-code-result').innerText = 'There was an error generating the code. Please try again.';
         }
     }
 
@@ -95,7 +104,7 @@
         const codeToValidate = document.getElementById('code-to-validate').value;
 
         if (sixDigitStr.length !== 6 || threeCharStr.length !== 3 || codeToValidate.length !== 6) {
-            console.log("Please ensure all input fields have the correct lengths.");
+            document.getElementById('validation-result').innerText = "Please ensure all input fields are correctly filled with the required lengths.";
             return;
         }
 
@@ -112,16 +121,18 @@
 
             const data = await response.json();
             if (data.isValid) {
-                document.getElementById('validation-result').innerText = `Code is valid, generated at: ${new Date(data.generatedTime)}`;
+                document.getElementById('validation-result').innerText = `Code is valid. Generated at: ${new Date(data.generatedTime)}`;
+                document.getElementById('validation-result').style.color = 'green';
             } else {
                 document.getElementById('validation-result').innerText = `Code is invalid.`;
+                document.getElementById('validation-result').style.color = 'red';
             }
         } catch (error) {
             console.error('Error validating code:', error);
-            console.log('There was an error validating the code. Please try again.');
+            document.getElementById('validation-result').innerText = 'There was an error validating the code. Please try again.';
         }
     }
-</script>
+  </script>
 
 </body>
 </html>
