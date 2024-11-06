@@ -47,6 +47,7 @@
       max-width: 300px;
       text-align: center;
       user-select: none;
+      display: none; /* Hidden initially */
     }
     .error, .success {
       margin-top: 10px;
@@ -137,6 +138,7 @@
 
       if (!isClassNumberValid || !isEmailValid) {
         resultDiv.textContent = '';
+        resultDiv.style.display = 'none';
         return;
       }
 
@@ -152,24 +154,27 @@
         }
 
         const data = await response.json();
-        resultDiv.textContent = `Generated Code: ${data.code}`;
+        resultDiv.textContent = `Generated Code: ${data.code}. Click to copy.`;
         resultDiv.className = 'result success';
+        resultDiv.style.display = 'block'; // Show the result div
       } catch (error) {
         console.error('Error generating code:', error);
         resultDiv.textContent = 'There was an error generating the code. Please try again.';
         resultDiv.className = 'result error';
+        resultDiv.style.display = 'block'; // Show the result div for error feedback
       }
     }
 
     function copyToClipboard() {
-      const codeText = document.getElementById('generated-code-result').textContent.split(': ')[1];
+      const codeText = document.getElementById('generated-code-result').textContent.split(': ')[1].split('.')[0];
       if (codeText) {
         navigator.clipboard.writeText(codeText)
           .then(() => {
             const copyMessage = document.getElementById('generated-code-result');
             copyMessage.textContent = 'Code copied to clipboard!';
-            copyMessage.className = 'result success';
-            setTimeout(() => copyMessage.textContent = `Generated Code: ${codeText}`, 2000);
+            setTimeout(() => {
+              copyMessage.textContent = `Generated Code: ${codeText}. Click to copy.`;
+            }, 2000);
           })
           .catch(err => console.error('Failed to copy code:', err));
       }
