@@ -1,119 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Class Code Demo</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        input, button {
-            padding: 5px;
-            margin: 5px;
-        }
-        .result {
-            margin-top: 15px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Code Generator and Validator Demo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    input, button {
+      padding: 5px;
+      margin: 5px;
+    }
+    .result {
+      margin-top: 15px;
+    }
+    .input-group {
+      margin-bottom: 10px;
+    }
+    label {
+      display: inline-block;
+      width: 200px;
+    }
+  </style>
 </head>
 <body>
-    <h1>Class Code Generator and Validator Demo</h1>
-    <div>
-        <h2>Generate Code</h2>
-        <label for="generate-six-digit">Class Number String:</label>
-        <input type="text" id="generate-six-digit" maxlength="6" value="125468" ><br>
-        <label for="generate-three-char">Student Email(First three characters):</label>
-        <input type="text" id="generate-three-char" maxlength="3" value="nca"><br>
-        <button onclick="generateCode()">Generate Code</button>
-        <div class="result" id="generated-code-result"></div>
+  <h1>Code Generator and Validator Demo</h1>
+  <div>
+    <h2>Generate Code</h2>
+    <div class="input-group">
+      <label for="generate-six-digit">Six-Digit String:</label>
+      <input type="text" id="generate-six-digit" maxlength="6">
     </div>
-    <hr>
-    <div>
-        <h2>Validate Code</h2>
-        <label for="validate-six-digit">Class Number String:</label>
-        <input type="text" id="validate-six-digit" maxlength="6"><br>
-        <label for="validate-three-char">Student Email(First three characters)</label>
-        <input type="text" id="validate-three-char" maxlength="3"><br>
-        <label for="code-to-validate">Code to Validate:</label>
-        <input type="text" id="code-to-validate" maxlength="6"><br>
-        <button onclick="validateCode()">Validate Code</button>
-        <div class="result" id="validation-result"></div>
+    <div class="input-group">
+      <label for="generate-three-char">Three-Character String:</label>
+      <input type="text" id="generate-three-char" maxlength="3">
     </div>
+    <button onclick="generateCode()">Generate Code</button>
+    <div class="result" id="generated-code-result"></div>
+  </div>
+  <hr>
+  <div>
+    <h2>Validate Code</h2>
+    <div class="input-group">
+      <label for="validate-six-digit">Six-Digit String:</label>
+      <input type="text" id="validate-six-digit" maxlength="6">
+    </div>
+    <div class="input-group">
+      <label for="validate-three-char">Three-Character String:</label>
+      <input type="text" id="validate-three-char" maxlength="3">
+    </div>
+    <div class="input-group">
+      <label for="code-to-validate">Code to Validate:</label>
+      <input type="text" id="code-to-validate" maxlength="6">
+    </div>
+    <button onclick="validateCode()">Validate Code</button>
+    <div class="result" id="validation-result"></div>
+  </div>
 
-    <script>
-        async function sha256(message) {
-            const msgBuffer = new TextEncoder().encode(message);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-            return hashHex;
+  <script>
+    // Replace with your Cloudflare Worker URL if hosted separately
+    const WORKER_BASE_URL = 'https://classcode-worker.cloudflare1-b1e.workers.dev/';
+
+    async function generateCode() {
+      const sixDigitStr = document.getElementById('generate-six-digit').value.trim();
+      const threeCharStr = document.getElementById('generate-three-char').value.trim();
+
+      if (sixDigitStr.length !== 6 || threeCharStr.length !== 3) {
+        alert("Please ensure the six-digit string is 6 digits and the three-character string is 3 characters long.");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${WORKER_BASE_URL}/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sixDigitStr, threeCharStr })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || 'Error generating code.');
         }
 
-        async function generateCode() {
-            const sixDigitStr = document.getElementById('generate-six-digit').value;
-            const threeCharStr = document.getElementById('generate-three-char').value;
+        const data = await response.json();
+        document.getElementById('generated-code-result').innerText = `Generated Code: ${data.code}`;
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+      }
+    }
 
-            if (sixDigitStr.length !== 6 || threeCharStr.length !== 3) {
-                alert("Please ensure the six-digit string is 6 digits and the three-character string is 3 characters long.");
-                return;
-            }
+    async function validateCode() {
+      const sixDigitStr = document.getElementById('validate-six-digit').value.trim();
+      const threeCharStr = document.getElementById('validate-three-char').value.trim();
+      const codeToValidate = document.getElementById('code-to-validate').value.trim();
 
-            const currentTime = new Date();
-            const code = await generateCodeFunction(sixDigitStr, threeCharStr, currentTime);
-            document.getElementById('generated-code-result').innerText = `Generated Code: ${code}`;
+      if (
+        sixDigitStr.length !== 6 ||
+        threeCharStr.length !== 3 ||
+        codeToValidate.length !== 6
+      ) {
+        alert("Please ensure all input fields have the correct lengths.");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${WORKER_BASE_URL}/validate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sixDigitStr, threeCharStr, codeToValidate })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || 'Error validating code.');
         }
 
-        async function generateCodeFunction(sixDigitStr, threeCharStr, currentTime) {
-            const timeWindow = Math.floor(currentTime.getTime() / 1000 / 30);
-            const inputStr = sixDigitStr + threeCharStr + timeWindow.toString();
-            const hash = await sha256(inputStr);
-            const codeInt = parseInt(hash.substring(0, 6), 16) % 1000000;
-            const codeStr = codeInt.toString().padStart(6, '0');
-            return codeStr;
+        const data = await response.json();
+        if (data.isValid) {
+          const generatedAt = new Date(data.generatedTime);
+          document.getElementById('validation-result').innerText = `Code is valid, generated at: ${generatedAt.toUTCString()}`;
+        } else {
+          document.getElementById('validation-result').innerText = `Code is invalid.`;
         }
-
-        async function validateCode() {
-            const sixDigitStr = document.getElementById('validate-six-digit').value;
-            const threeCharStr = document.getElementById('validate-three-char').value;
-            const codeToValidate = document.getElementById('code-to-validate').value;
-
-            if (
-                sixDigitStr.length !== 6 ||
-                threeCharStr.length !== 3 ||
-                codeToValidate.length !== 6
-            ) {
-                alert("Please ensure all input fields have the correct lengths.");
-                return;
-            }
-
-            const { isValid, generatedTime } = await validateCodeFunction(sixDigitStr, threeCharStr, codeToValidate);
-            if (isValid) {
-                document.getElementById('validation-result').innerText = `Code is valid, generated at: ${generatedTime}`;
-            } else {
-                document.getElementById('validation-result').innerText = `Code is invalid.`;
-            }
-        }
-
-        async function validateCodeFunction(sixDigitStr, threeCharStr, codeToValidate) {
-            const currentTime = new Date();
-
-            for (let deltaSeconds of [-30, 0, 30]) {
-                const adjustedTime = new Date(currentTime.getTime() + deltaSeconds * 1000);
-                const timeWindow = Math.floor(adjustedTime.getTime() / 1000 / 30);
-                const inputStr = sixDigitStr + threeCharStr + timeWindow.toString();
-                const hash = await sha256(inputStr);
-                const codeInt = parseInt(hash.substring(0, 6), 16) % 1000000;
-                const codeStr = codeInt.toString().padStart(6, '0');
-
-                if (codeStr === codeToValidate) {
-                    const generatedTime = new Date(timeWindow * 30 * 1000);
-                    return { isValid: true, generatedTime: generatedTime };
-                }
-            }
-
-            return { isValid: false, generatedTime: null };
-        }
-    </script>
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+      }
+    }
+  </script>
 </body>
 </html>
