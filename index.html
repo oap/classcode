@@ -59,74 +59,69 @@
   </div>
 
   <script>
-    // Replace with your Cloudflare Worker URL if hosted separately
     const WORKER_BASE_URL = 'https://classcode-worker.cloudflare1-b1e.workers.dev';
 
     async function generateCode() {
-      const sixDigitStr = document.getElementById('generate-six-digit').value.trim();
-      const threeCharStr = document.getElementById('generate-three-char').value.trim();
+        const sixDigitStr = document.getElementById('generate-six-digit').value;
+        const threeCharStr = document.getElementById('generate-three-char').value;
 
-      if (sixDigitStr.length !== 6 || threeCharStr.length !== 3) {
-        alert("Please ensure the six-digit string is 6 digits and the three-character string is 3 characters long.");
-        return;
-      }
-
-      try {
-        const response = await fetch(`${WORKER_BASE_URL}/generate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sixDigitStr, threeCharStr })
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || 'Error generating code.');
+        if (sixDigitStr.length !== 6 || threeCharStr.length !== 3) {
+            console.log("Please ensure the six-digit string is 6 digits and the three-character string is 3 characters long.");
+            return;
         }
 
-        const data = await response.json();
-        document.getElementById('generated-code-result').innerText = `Generated Code: ${data.code}`;
-      } catch (error) {
-        alert(`Error: ${error.message}`);
-      }
+        try {
+            const response = await fetch(`${WORKER_BASE_URL}/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sixDigitStr, threeCharStr })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            document.getElementById('generated-code-result').innerText = `Generated Code: ${data.code}`;
+        } catch (error) {
+            console.error('Error generating code:', error);
+            console.log('There was an error generating the code. Please try again.');
+        }
     }
 
     async function validateCode() {
-      const sixDigitStr = document.getElementById('validate-six-digit').value.trim();
-      const threeCharStr = document.getElementById('validate-three-char').value.trim();
-      const codeToValidate = document.getElementById('code-to-validate').value.trim();
+        const sixDigitStr = document.getElementById('validate-six-digit').value;
+        const threeCharStr = document.getElementById('validate-three-char').value;
+        const codeToValidate = document.getElementById('code-to-validate').value;
 
-      if (
-        sixDigitStr.length !== 6 ||
-        threeCharStr.length !== 3 ||
-        codeToValidate.length !== 6
-      ) {
-        alert("Please ensure all input fields have the correct lengths.");
-        return;
-      }
-
-      try {
-        const response = await fetch(`${WORKER_BASE_URL}/validate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sixDigitStr, threeCharStr, codeToValidate })
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || 'Error validating code.');
+        if (sixDigitStr.length !== 6 || threeCharStr.length !== 3 || codeToValidate.length !== 6) {
+            console.log("Please ensure all input fields have the correct lengths.");
+            return;
         }
 
-        const data = await response.json();
-        if (data.isValid) {
-          const generatedAt = new Date(data.generatedTime);
-          document.getElementById('validation-result').innerText = `Code is valid, generated at: ${generatedAt.toUTCString()}`;
-        } else {
-          document.getElementById('validation-result').innerText = `Code is invalid.`;
+        try {
+            const response = await fetch(`${WORKER_BASE_URL}/validate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sixDigitStr, threeCharStr, codeToValidate })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            if (data.isValid) {
+                document.getElementById('validation-result').innerText = `Code is valid, generated at: ${new Date(data.generatedTime)}`;
+            } else {
+                document.getElementById('validation-result').innerText = `Code is invalid.`;
+            }
+        } catch (error) {
+            console.error('Error validating code:', error);
+            console.log('There was an error validating the code. Please try again.');
         }
-      } catch (error) {
-        alert(`Error: ${error.message}`);
-      }
     }
-  </script>
+</script>
+
 </body>
 </html>
